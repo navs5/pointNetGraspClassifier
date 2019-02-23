@@ -1,0 +1,6 @@
+./code/data_test.npy
+./code/data_train.npy
+./code/data_val.npy
+./code/label_test.npy
+./code/label_train.npy
+./code/label_val.npy
