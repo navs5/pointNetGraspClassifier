@@ -1,6 +1,7 @@
-./code/data_test.npy
-./code/data_train.npy
-./code/data_val.npy
-./code/label_test.npy
-./code/label_train.npy
-./code/label_val.npy
+RGCNN/data_test.npy
+RGCNN/data_train.npy
+RGCNN/data_val.npy
+RGCNN/label_test.npy
+RGCNN/label_train.npy
+RGCNN/label_val.npy
+
