@@ -562,7 +562,6 @@ class PointGraspOneViewDataset(torch.utils.data.Dataset):
         self.thresh_bad = thresh_bad
         self.with_obj = with_obj
         self.min_point_limit = 50
-
         # projection related
         self.projection = projection
         self.project_chann = project_chann
@@ -592,11 +591,17 @@ class PointGraspOneViewDataset(torch.utils.data.Dataset):
 
         for i in fl_grasp:
             k = i.split('/')[-1].split('.')[0]
+            first_idx = k.find('_')
+            last_idx = k.rfind('_') 
+            k = k[first_idx+1:last_idx]
             self.d_grasp[k] = i
+        
         object1 = set(self.d_grasp.keys())
         object2 = set(self.transform.keys())
         self.object = list(object1.intersection(object2))
         self.amount = len(self.object) * self.grasp_amount_per_file
+        print("Not using objects: {}".format(object1 - object2)) 
+        print("Using objects: {}/{} from {}".format(len(self.object), len(object1), os.path.join(path, 'ycb_grasp', self.tag, '*.npy')))
 
     def collect_pc(self, grasp, pc, transform):
         center = grasp[0:3]
@@ -781,7 +786,6 @@ class PointGraspOneViewDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         # try:
         obj_ind, grasp_ind = np.unravel_index(index, (len(self.object), self.grasp_amount_per_file))
-
         obj_grasp = self.object[obj_ind]
         obj_pc = self.transform[obj_grasp][0]
         f_grasp = self.d_grasp[obj_grasp]
@@ -794,6 +798,7 @@ class PointGraspOneViewDataset(torch.utils.data.Dataset):
 
         grasp_pc = self.collect_pc(grasp, pc, t)
         if grasp_pc is None:
+            # print("None returned for grasp_pc with grasp:{} and pc:{}".format(f_grasp, fl_pc))
             return None
         level_score, refine_score = grasp[-2:]
 
@@ -1049,7 +1054,6 @@ class PointGraspOneViewMultiClassDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         # try:
         obj_ind, grasp_ind = np.unravel_index(index, (len(self.object), self.grasp_amount_per_file))
-
         obj_grasp = self.object[obj_ind]
         obj_pc = self.transform[obj_grasp][0]
         f_grasp = self.d_grasp[obj_grasp]
@@ -1062,6 +1066,7 @@ class PointGraspOneViewMultiClassDataset(torch.utils.data.Dataset):
 
         grasp_pc = self.collect_pc(grasp, pc, t)
         if grasp_pc is None:
+            # print("None returned for grasp_pc with grasp:{} and pc:{}".format(f_grasp, fl_pc))
             return None
         level_score, refine_score = grasp[-2:]
 
@@ -1101,17 +1106,24 @@ if __name__ == '__main__':
 
     input_size = 60
     input_chann = 12  # 12
-    a = PointGraspDataset(
-        obj_points_num=obj_points_num,
-        grasp_points_num=grasp_points_num,
-        pc_file_used_num=pc_file_used_num,
-        path="../data",
-        tag='train',
-        grasp_amount_per_file=6500,
-        thresh_good=thresh_good,
-        thresh_bad=thresh_bad,
-        projection=True,
-        project_chann=input_chann,
-        project_size=input_size,
-    )
-    c, d = a.__getitem__(0)
+    a = PointGraspOneViewDataset(grasp_points_num=1000, grasp_amount_per_file=480, thresh_good=0.6,\
+                                 thresh_bad=0.6, path='../data', tag='train', with_obj=False, \
+                                 projection=False, project_chann=3, project_size=60)
+    #zz = PointGraspOneViewDataset(
+    #    obj_points_num=obj_points_num,
+    #    grasp_points_num=grasp_points_num,
+    #    pc_file_used_num=pc_file_used_num,
+    #    path="../data",
+    #    tag='train',
+    #    grasp_amount_per_file=6500,
+    #    thresh_good=thresh_good,
+    #    thresh_bad=thresh_bad,
+    #    projection=True,
+    #    project_chann=input_chann,
+    #    project_size=input_size,
+    #)
+    c, d = a.__getitem__(4)
+    print(c.shape)
+    print(d)
+
+

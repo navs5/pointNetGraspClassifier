@@ -17,9 +17,9 @@ from model.pointnet import PointNetCls, DualPointNetCls
 
 parser = argparse.ArgumentParser(description='pointnetGPD')
 parser.add_argument('--tag', type=str, default='default')
-parser.add_argument('--epoch', type=int, default=200)
+parser.add_argument('--epoch', type=int, default=20)
 parser.add_argument('--mode', choices=['train', 'test'], required=True)
-parser.add_argument('--batch-size', type=int, default=1)
+parser.add_argument('--batch-size', type=int, default=32)
 parser.add_argument('--cuda', action='store_true')
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--lr', type=float, default=0.005)
@@ -48,17 +48,18 @@ def my_collate(batch):
     batch = list(filter(lambda x:x is not None, batch))
     return torch.utils.data.dataloader.default_collate(batch)
 
-grasp_points_num=750
+grasp_points_num=1000
 thresh_good=0.6
 thresh_bad=0.6
 point_channel=3
+
 
 train_loader = torch.utils.data.DataLoader(
     PointGraspOneViewDataset(
         grasp_points_num=grasp_points_num,
         path=args.data_path,
         tag='train',
-        grasp_amount_per_file=6500,
+        grasp_amount_per_file=450,   #TODO: 6500,
         thresh_good=thresh_good,
         thresh_bad=thresh_bad,
     ),
@@ -75,7 +76,7 @@ test_loader = torch.utils.data.DataLoader(
         grasp_points_num=grasp_points_num,
         path=args.data_path,
         tag='test',
-        grasp_amount_per_file=500,
+        grasp_amount_per_file=450, #TODO: 500,
         thresh_good=thresh_good,
         thresh_bad=thresh_bad,
         with_obj=True,
@@ -98,6 +99,7 @@ if is_resume or args.mode == 'test':
     print('load model {}'.format(args.load_model))
 else:
     model = PointNetCls(num_points=grasp_points_num, input_chann=point_channel, k=2)
+
 if args.cuda:
     if args.gpu != -1:
         torch.cuda.set_device(args.gpu)
@@ -109,6 +111,7 @@ if args.cuda:
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 scheduler = StepLR(optimizer, step_size=30, gamma=0.5)
 
+
 def train(model, loader, epoch):
     scheduler.step()
     model.train()
@@ -117,6 +120,7 @@ def train(model, loader, epoch):
     dataset_size = 0
     for batch_idx, (data, target) in enumerate(loader):
         dataset_size += data.shape[0]
+        # print(data.shape)
         data, target = data.float(), target.long().squeeze()
         if args.cuda:
             data, target = data.cuda(), target.cuda()

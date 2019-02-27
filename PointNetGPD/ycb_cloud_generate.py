@@ -345,14 +345,15 @@ def generate(path):
     ycb_data_folder = path[0]			# Folder that contains the ycb data.	
     target_object = path[1]	# Full name of the target object.
     viewpoint_camera = path[2].split('_')[0]				# Camera which the viewpoint will be generated.
-    viewpoint_angle = path[2].split('_')[1].split('.')[0]				# Relative angle of the object w.r.t the camera (angle of the turntable).
-
+    viewpoint_angle = path[2].split('_')[1].split('.')[0]				# Relative angle of the object w.r.t the camera (angle of the turntable).  
+    # print("ycb_data_folder: {}, target_object: {}, vp_cam: {}, vp_ang: {}".format(ycb_data_folder, target_object, viewpoint_camera, viewpoint_angle)) 
     referenceCamera = "NP5" # can only be NP5
 
     ply_fname = os.path.join(ycb_data_folder, target_object, "clouds", "pc_"+viewpoint_camera+"_"+referenceCamera+"_"+viewpoint_angle+".ply")
+    
     pcd_fname = os.path.join(ycb_data_folder, target_object, "clouds", "pc_"+viewpoint_camera+"_"+referenceCamera+"_"+viewpoint_angle+".pcd")
     npy_fname = os.path.join(ycb_data_folder, target_object, "clouds", "pc_"+viewpoint_camera+"_"+referenceCamera+"_"+viewpoint_angle+".npy")
-
+    
     if os.path.exists(ply_fname) and os.path.exists(pcd_fname):
         print(ycb_data_folder, target_object, viewpoint_camera, viewpoint_angle, 'pass')
         return
@@ -399,7 +400,8 @@ def generate(path):
         writePLY(ply_fname, pointCloud)
         writePCD(pcd_fname, pointCloud)
         np.save(npy_fname, pointCloud[: ,:, :3].reshape(-1, 3))
-    except:
+    except Exception as e:
+        print(e)
         f = open('exception.txt', 'a')
         f.write('/'.join(path) + '\n')
         f.close()
@@ -408,7 +410,8 @@ def generate(path):
 
 
 def main():
-    fl = np.array(glob.glob('data/ycb_rgbd/0*/*.jpg'))
+    fl = np.array(glob.glob('ycb_rgbd/0*/*.jpg'))
+    print(fl.shape)
     np.random.shuffle(fl)
     cores = mp.cpu_count()
     pool = mp.Pool(processes=cores) 
