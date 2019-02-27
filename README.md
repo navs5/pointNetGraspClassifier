@@ -1,3 +1,4 @@
+
 # PointNetGPD: Detecting Grasp Configurations from Point Sets
 PointNetGPD (ICRA 2019, [arXiv](https://arxiv.org/abs/1809.06267)) is an end-to-end grasp evaluation model to address the challenging problem of localizing robot grasp configurations directly from the point cloud.
 
@@ -235,3 +236,8 @@ If you found PointNetGPD useful in your research, please consider citing:
 - [pyntcloud](https://github.com/daavoo/pyntcloud)
 - [metu-ros-pkg](https://github.com/kadiru/metu-ros-pkg)
 - [mayavi](https://github.com/enthought/mayavi)
+=======
+# pointNetGraspClassifier
+Using the PointNet architecture to create a robotic arm grasp classifier
+
+.

@@ -1,3 +1,4 @@
+
 dex-net/apps/generated_grasps/
 .dexnet/
 
@@ -207,3 +208,12 @@ tags
 *.snm
 *.toc
 *.synctex.gz
+
+RGCNN/data_test.npy
+RGCNN/data_train.npy
+RGCNN/data_val.npy
+RGCNN/label_test.npy
+RGCNN/label_train.npy
+RGCNN/label_val.npy
+
+
