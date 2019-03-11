@@ -2,7 +2,7 @@ import os
 import glob
 import pickle
 
-import pcl
+# import pcl
 import torch
 import torch.utils.data
 import torch.nn as nn
@@ -581,6 +581,7 @@ class PointGraspOneViewDataset(torch.utils.data.Dataset):
 
         self.d_pc, self.d_grasp = {}, {}
         for i in fl_pc:
+            i = i.replace('\\', '/')
             k = i.split('/')[-3]
             if k in self.d_pc.keys():
                 self.d_pc[k].append(i)
@@ -590,6 +591,7 @@ class PointGraspOneViewDataset(torch.utils.data.Dataset):
             self.d_pc[k].sort()
 
         for i in fl_grasp:
+            i = i.replace('\\', '/')
             k = i.split('/')[-1].split('.')[0]
             first_idx = k.find('_')
             last_idx = k.rfind('_') 
