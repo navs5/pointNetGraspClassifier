@@ -1,7 +1,6 @@
 dex-net/apps/generated_grasps/
 .dexnet/
 
-PointNetGPD/assets/
 PointNetGPD/data/
 PointNetGPD/OLD/
 PointNetGPD/chann_12/

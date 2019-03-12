@@ -24,7 +24,6 @@ class STN3d(nn.Module):
         self.bn4 = nn.BatchNorm1d(512)
         self.bn5 = nn.BatchNorm1d(256)
 
-
     def forward(self, x):
         batchsize = x.size()[0]
         x = F.relu(self.bn1(self.conv1(x)))
@@ -45,6 +44,89 @@ class STN3d(nn.Module):
         return x
 
 
+class PointNetfeat(nn.Module):
+    def __init__(self, num_points = 2500, input_chann = 3, global_feat = True):
+        super(PointNetfeat, self).__init__()
+        self.stn = STN3d(num_points = num_points, input_chann = input_chann)
+        self.conv1 = torch.nn.Conv1d(input_chann, 64, 1)
+        self.conv2 = torch.nn.Conv1d(64, 128, 1)
+        self.conv3 = torch.nn.Conv1d(128, 1024, 1)
+        self.bn1 = nn.BatchNorm1d(64)
+        self.bn2 = nn.BatchNorm1d(128)
+        self.bn3 = nn.BatchNorm1d(1024)
+        self.mp1 = torch.nn.MaxPool1d(num_points)
+        self.num_points = num_points
+        self.global_feat = global_feat
+
+    def forward(self, x):
+        batchsize = x.size()[0]
+        trans = self.stn(x)
+        x = x.transpose(2,1)
+        x = torch.bmm(x, trans)
+        # x = torch.cat([torch.bmm(x[..., 0:3], trans), torch.bmm(x[..., 3:6], trans)], dim=-1)
+        x = x.transpose(2,1)
+        x = F.relu(self.bn1(self.conv1(x)))
+        pointfeat = x
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = self.bn3(self.conv3(x))
+        x = self.mp1(x)
+        x = x.view(-1, 1024)
+        if self.global_feat:
+            return x, trans
+        else:
+            x = x.view(-1, 1024, 1).repeat(1, 1, self.num_points)
+            return torch.cat((x, pointfeat), 1), trans
+
+
+class PointNetCls(nn.Module):
+    def __init__(self, num_points=2500, input_chann=3, k=2):
+        super(PointNetCls, self).__init__()
+        self.num_points = num_points
+        self.feat = PointNetfeat(num_points, input_chann=input_chann, global_feat=True)
+        self.fc1 = nn.Linear(1024, 512)
+        self.fc2 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(256, k)
+        self.bn1 = nn.BatchNorm1d(512)
+        self.bn2 = nn.BatchNorm1d(256)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x, trans = self.feat(x)
+        x = F.relu(self.bn1(self.fc1(x)))
+        x = F.relu(self.bn2(self.fc2(x)))
+        x = self.fc3(x)
+        return F.log_softmax(x, dim=-1), trans
+
+
+class PointNetCls2(nn.Module):
+    def __init__(self, num_points=2500, input_chann=3, k=2):
+        super(PointNetCls2, self).__init__()
+        self.num_points = num_points
+        self.feat = PointNetfeat(num_points, input_chann=input_chann, global_feat=True)
+        self.fc1 = nn.Linear(1024, 512)
+        self.fc2 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(256, 128)
+        self.fc4 = nn.Linear(128, 64)
+        self.fc5 = nn.Linear(64, 32)
+        self.fc6 = nn.Linear(32, k)
+        self.bn1 = nn.BatchNorm1d(512)
+        self.bn2 = nn.BatchNorm1d(256)
+        self.bn3 = nn.BatchNorm1d(128)
+        self.bn4 = nn.BatchNorm1d(64)
+        self.bn5 = nn.BatchNorm1d(32)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x, trans = self.feat(x)
+        x = F.relu(self.bn1(self.fc1(x)))
+        x = F.relu(self.bn2(self.fc2(x)))
+        x = F.relu(self.bn3(self.fc3(x)))
+        x = F.relu(self.bn4(self.fc4(x)))
+        x = F.relu(self.bn5(self.fc5(x)))
+        x = self.fc6(x)
+        return F.log_softmax(x, dim=-1), trans
+
+
 class SimpleSTN3d(nn.Module):
     def __init__(self, num_points = 2500, input_chann = 3):
         super(SimpleSTN3d, self).__init__()
@@ -63,7 +145,6 @@ class SimpleSTN3d(nn.Module):
         self.bn3 = nn.BatchNorm1d(256)
         self.bn4 = nn.BatchNorm1d(128)
         self.bn5 = nn.BatchNorm1d(64)
-
 
     def forward(self, x):
         batchsize = x.size()[0]
@@ -86,10 +167,10 @@ class SimpleSTN3d(nn.Module):
 
 
 class DualPointNetfeat(nn.Module):
-    def __init__(self, num_points = 2500, input_chann = 6, global_feat = True):
+    def __init__(self, num_points=2500, input_chann=6, global_feat=True):
         super(DualPointNetfeat, self).__init__()
-        self.stn1 = SimpleSTN3d(num_points = num_points, input_chann = input_chann//2)
-        self.stn2 = SimpleSTN3d(num_points = num_points, input_chann = input_chann//2)
+        self.stn1 = SimpleSTN3d(num_points=num_points, input_chann=input_chann // 2)
+        self.stn2 = SimpleSTN3d(num_points=num_points, input_chann=input_chann // 2)
         self.conv1 = torch.nn.Conv1d(input_chann, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
         self.conv3 = torch.nn.Conv1d(128, 1024, 1)
@@ -99,13 +180,14 @@ class DualPointNetfeat(nn.Module):
         self.mp1 = torch.nn.MaxPool1d(num_points)
         self.num_points = num_points
         self.global_feat = global_feat
+
     def forward(self, x):
         batchsize = x.size()[0]
         trans1 = self.stn1(x[:, 0:3, :])
         trans2 = self.stn2(x[:, 3:6, :])
-        x = x.transpose(2,1)
-        x = torch.cat([torch.bmm(x[..., 0:3], trans1), torch.bmm(x[..., 3:6], trans2)], dim=-1)
-        x = x.transpose(2,1)
+        x = x.transpose(2, 1)
+        x = torch.cat((torch.bmm(x[..., 0:3], trans1), torch.bmm(x[..., 3:6], trans2)), dim=-1)
+        x = x.transpose(2, 1)
         x = F.relu(self.bn1(self.conv1(x)))
         pointfeat = x
         x = F.relu(self.bn2(self.conv2(x)))
@@ -116,40 +198,7 @@ class DualPointNetfeat(nn.Module):
             return x, trans1 + trans2
         else:
             x = x.view(-1, 1024, 1).repeat(1, 1, self.num_points)
-            return torch.cat([x, pointfeat], 1), trans1 + trans2
-
-
-class PointNetfeat(nn.Module):
-    def __init__(self, num_points = 2500, input_chann = 3, global_feat = True):
-        super(PointNetfeat, self).__init__()
-        self.stn = STN3d(num_points = num_points, input_chann = input_chann)
-        self.conv1 = torch.nn.Conv1d(input_chann, 64, 1)
-        self.conv2 = torch.nn.Conv1d(64, 128, 1)
-        self.conv3 = torch.nn.Conv1d(128, 1024, 1)
-        self.bn1 = nn.BatchNorm1d(64)
-        self.bn2 = nn.BatchNorm1d(128)
-        self.bn3 = nn.BatchNorm1d(1024)
-        self.mp1 = torch.nn.MaxPool1d(num_points)
-        self.num_points = num_points
-        self.global_feat = global_feat
-    def forward(self, x):
-        batchsize = x.size()[0]
-        trans = self.stn(x)
-        x = x.transpose(2,1)
-        x = torch.bmm(x, trans)
-        # x = torch.cat([torch.bmm(x[..., 0:3], trans), torch.bmm(x[..., 3:6], trans)], dim=-1)
-        x = x.transpose(2,1)
-        x = F.relu(self.bn1(self.conv1(x)))
-        pointfeat = x
-        x = F.relu(self.bn2(self.conv2(x)))
-        x = self.bn3(self.conv3(x))
-        x = self.mp1(x)
-        x = x.view(-1, 1024)
-        if self.global_feat:
-            return x, trans
-        else:
-            x = x.view(-1, 1024, 1).repeat(1, 1, self.num_points)
-            return torch.cat([x, pointfeat], 1), trans
+            return torch.cat((x, pointfeat), 1), trans1 + trans2
 
 
 class DualPointNetCls(nn.Module):
@@ -163,6 +212,7 @@ class DualPointNetCls(nn.Module):
         self.bn1 = nn.BatchNorm1d(512)
         self.bn2 = nn.BatchNorm1d(256)
         self.relu = nn.ReLU()
+
     def forward(self, x):
         x, trans = self.feat(x)
         x = F.relu(self.bn1(self.fc1(x)))
@@ -170,24 +220,6 @@ class DualPointNetCls(nn.Module):
         x = self.fc3(x)
         return F.log_softmax(x, dim=-1), trans
 
-
-class PointNetCls(nn.Module):
-    def __init__(self, num_points = 2500, input_chann = 3, k = 2):
-        super(PointNetCls, self).__init__()
-        self.num_points = num_points
-        self.feat = PointNetfeat(num_points, input_chann=input_chann, global_feat=True)
-        self.fc1 = nn.Linear(1024, 512)
-        self.fc2 = nn.Linear(512, 256)
-        self.fc3 = nn.Linear(256, k)
-        self.bn1 = nn.BatchNorm1d(512)
-        self.bn2 = nn.BatchNorm1d(256)
-        self.relu = nn.ReLU()
-    def forward(self, x):
-        x, trans = self.feat(x)
-        x = F.relu(self.bn1(self.fc1(x)))
-        x = F.relu(self.bn2(self.fc2(x)))
-        x = self.fc3(x)
-        return F.log_softmax(x, dim=-1), trans
 
 class PointNetDenseCls(nn.Module):
     def __init__(self, num_points = 2500, input_chann = 3, k = 2):

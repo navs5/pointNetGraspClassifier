@@ -1,31 +1,31 @@
 import argparse
-import os
 import time
-import pickle
 
-import torch
 import torch.utils.data
-import torch.nn as nn
+
 import torch.nn.functional as F
 import torch.optim as optim
-import numpy as np
+
 from tensorboardX import SummaryWriter
 from torch.optim.lr_scheduler import StepLR
 
 from model.dataset import *
-from model.pointnet import PointNetCls, DualPointNetCls
+from model.pointnet import PointNetCls, PointNetCls2
+
+grasp_points_num = 1000
+thresh_good = 0.6
+thresh_bad = 0.6
+point_channel = 3
+
 
 def worker_init_fn(pid):
     np.random.seed(torch.initial_seed() % (2**31-1))
+
 
 def my_collate(batch):
     batch = list(filter(lambda x:x is not None, batch))
     return torch.utils.data.dataloader.default_collate(batch)
 
-grasp_points_num=1000
-thresh_good=0.6
-thresh_bad=0.6
-point_channel=3
 
 def train(model, loader, epoch, optimizer, scheduler):
     scheduler.step()
@@ -170,7 +170,7 @@ if __name__ == "__main__":
         model.device_ids = [args.gpu]
         print('load model {}'.format(args.load_model))
     else:
-        model = PointNetCls(num_points=grasp_points_num, input_chann=point_channel, k=2)
+        model = PointNetCls2(num_points=grasp_points_num, input_chann=point_channel, k=2)
 
     if args.cuda:
         if args.gpu != -1:

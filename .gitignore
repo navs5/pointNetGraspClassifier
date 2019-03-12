@@ -2,7 +2,7 @@
 dex-net/apps/generated_grasps/
 .dexnet/
 
-PointNetGPD/assets/
+
 PointNetGPD/data/
 PointNetGPD/OLD/
 PointNetGPD/chann_12/
@@ -216,4 +216,5 @@ RGCNN/label_test.npy
 RGCNN/label_train.npy
 RGCNN/label_val.npy
 
+.idea/inspectionProfiles
 
