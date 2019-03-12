@@ -377,7 +377,7 @@ class rgcnn(base_model):
     """
 
     def __init__(self, vertice, F, K, M, filter='chebyshev5', brelu='b1relu', pool='mpool1',
-                 num_epochs=20, learning_rate=0.1, decay_rate=0.95, decay_steps=None, momentum=0.9,
+                 num_epochs=20, learning_rate=0.1, decay_rate=0.95, decay_steps=None, momentum=0.8,
                  regularization=0, dropout=0, batch_size=100, eval_frequency=200,
                  dir_name=''):
         super(rgcnn, self).__init__()#super().__init__() #<---I took this out!
