@@ -216,5 +216,7 @@ RGCNN/label_test.npy
 RGCNN/label_train.npy
 RGCNN/label_val.npy
 
+code/grasp-pointnet/PointNetGPD/assets/log/scrap
+
 .idea/inspectionProfiles
 
