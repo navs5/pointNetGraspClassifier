@@ -123,7 +123,7 @@ if __name__ == "__main__":
     if args.cuda:
         torch.cuda.manual_seed(1)
 
-    logger = SummaryWriter(os.path.join('./assets\log', args.tag))  # WINDOWS
+    logger = SummaryWriter(os.path.join('./assets', 'log', args.tag))  # WINDOWS
     np.random.seed(int(time.time()))
 
     train_loader = torch.utils.data.DataLoader(
