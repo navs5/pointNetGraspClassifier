@@ -50,8 +50,8 @@ def train():
     params['dir_name'] = 'model'
     #params['num_epochs'] = 50
     params['num_epochs'] = 1
-    params['batch_size'] = 26
-    params['eval_frequency'] = 30
+    params['batch_size'] = 100 #was 26
+    params['eval_frequency'] = 200 #was 30
 
     # Building blocks.
     params['filter'] = 'chebyshev5'
@@ -83,9 +83,9 @@ def test():
     test_data, test_label, test_cat = genData('test')
     params = dict()
     params['dir_name'] = 'model'
-    params['num_epochs'] = 50
-    params['batch_size'] = 26
-    params['eval_frequency'] = 30
+    params['num_epochs'] = 1 #was 50
+    params['batch_size'] = 100 #was 26
+    params['eval_frequency'] = 200 #was 30
 
     # Building blocks.
     params['filter'] = 'chebyshev5'
