@@ -91,7 +91,7 @@ def main(train_loader, test_loader, optimizer, scheduler):
             logger.add_scalar('test_acc', acc, epoch)
             logger.add_scalar('test_loss', loss, epoch)
             if (epoch+1) % args.save_interval == 0:
-                path = os.path.join(args.model_path, args.tag + '_{}.model'.format(epoch))
+                path = os.path.join(args.model_path, args.tag + '_{}.model'.format(epoch+1))
                 torch.save(model, path)
                 print('Save model @ {}'.format(path))
     else:
@@ -115,7 +115,7 @@ if __name__ == "__main__":
                         help='pre-trained model path')
     parser.add_argument('--data-path', type=str, default='./data', help='data path')
     parser.add_argument('--log-interval', type=int, default=10)
-    parser.add_argument('--save-interval', type=int, default=5)
+    parser.add_argument('--save-interval', type=int, default=50)
 
     args = parser.parse_args()
     args.cuda = args.cuda if torch.cuda.is_available() else False
