@@ -76,7 +76,7 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
     """
     Input:
         radius: local region radius
-        nsample: max sample number in local region
+        nsample: max number of sample points in each local region
         xyz: all points, [B, N, C]
         new_xyz: query points, [B, S, C]
     Return:
@@ -99,9 +99,9 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
 def sample_and_group(npoint, radius, nsample, xyz, points):
     """
     Input:
-        npoint:
-        radius:
-        nsample:
+        npoint: number to centroids to sample
+        radius: radius of each local region
+        nsample: max number of points from each local region
         xyz: input points position data, [B, N, C]
         points: input points data, [B, N, D]
     Return:
@@ -117,7 +117,7 @@ def sample_and_group(npoint, radius, nsample, xyz, points):
     grouped_xyz -= new_xyz.view(B, S, 1, C)
     if points is not None:
         grouped_points = index_points(points, idx)
-        new_points = torch.cat([grouped_xyz, grouped_points], dim=-1)
+        new_points = torch.cat((grouped_xyz, grouped_points), dim=-1)
     else:
         new_points = grouped_xyz
     return new_xyz, new_points
@@ -137,12 +137,13 @@ def sample_and_group_all(xyz, points):
     new_xyz = torch.zeros(B, 1, C).to(device)
     grouped_xyz = xyz.view(B, 1, N, C)
     if points is not None:
-        new_points = torch.cat([grouped_xyz, points.view(B, 1, N, -1)], dim=-1)
+        new_points = torch.cat((grouped_xyz, points.view(B, 1, N, -1)), dim=-1)
     else:
         new_points = grouped_xyz
     return new_xyz, new_points
 
 
+# PointNetSetAbstraction(512, 0.2, 32, 3, [64, 64, 128], False)
 class PointNetSetAbstraction(nn.Module):
     def __init__(self, npoint, radius, nsample, in_channel, mlp, group_all):
         super(PointNetSetAbstraction, self).__init__()
@@ -244,58 +245,6 @@ class PointNetSetAbstractionMsg(nn.Module):
         new_xyz = new_xyz.permute(0, 2, 1)
         new_points_concat = torch.cat(new_points_list, dim=1)
         return new_xyz, new_points_concat
-
-
-class PointNetFeaturePropagation(nn.Module):
-    def __init__(self, in_channel, mlp):
-        super(PointNetFeaturePropagation, self).__init__()
-        self.mlp_convs = nn.ModuleList()
-        self.mlp_bns = nn.ModuleList()
-        last_channel = in_channel
-        for out_channel in mlp:
-            self.mlp_convs.append(nn.Conv1d(last_channel, out_channel, 1))
-            self.mlp_bns.append(nn.BatchNorm1d(out_channel))
-            last_channel = out_channel
-
-    def forward(self, xyz1, xyz2, points1, points2):
-        """
-        Input:
-            xyz1: input points position data, [B, C, N]
-            xyz2: sampled input points position data, [B, C, S]
-            points1: input points data, [B, D, N]
-            points2: input points data, [B, D, S]
-        Return:
-            new_points: upsampled points data, [B, D', N]
-        """
-        xyz1 = xyz1.permute(0, 2, 1)
-        xyz2 = xyz2.permute(0, 2, 1)
-
-        points2 = points2.permute(0, 2, 1)
-        B, N, C = xyz1.shape
-        _, S, _ = xyz2.shape
-
-        if S == 1:
-            interpolated_points = points2.repeat(1, N, 1)
-        else:
-            dists = square_distance(xyz1, xyz2)
-            dists, idx = dists.sort(dim=-1)
-            dists, idx = dists[:, :, :3], idx[:, :, :3]  # [B, N, 3]
-            dists[dists < 1e-10] = 1e-10
-            weight = 1.0 / dists  # [B, N, 3]
-            weight = weight / torch.sum(weight, dim=-1).view(B, N, 1)  # [B, N, 3]
-            interpolated_points = torch.sum(index_points(points2, idx) * weight.view(B, N, 3, 1), dim=2)
-
-        if points1 is not None:
-            points1 = points1.permute(0, 2, 1)
-            new_points = torch.cat([points1, interpolated_points], dim=-1)
-        else:
-            new_points = interpolated_points
-
-        new_points = new_points.permute(0, 2, 1)
-        for i, conv in enumerate(self.mlp_convs):
-            bn = self.mlp_bns[i]
-            new_points = F.relu(bn(conv(new_points)))
-        return new_points
 
 
 class PointNet2ClsMsg(nn.Module):
@@ -456,6 +405,58 @@ class PointNet2Seg(nn.Module):
                 print(name)
                 continue
             own_state[name].copy_(param)
+
+
+class PointNetFeaturePropagation(nn.Module):
+    def __init__(self, in_channel, mlp):
+        super(PointNetFeaturePropagation, self).__init__()
+        self.mlp_convs = nn.ModuleList()
+        self.mlp_bns = nn.ModuleList()
+        last_channel = in_channel
+        for out_channel in mlp:
+            self.mlp_convs.append(nn.Conv1d(last_channel, out_channel, 1))
+            self.mlp_bns.append(nn.BatchNorm1d(out_channel))
+            last_channel = out_channel
+
+    def forward(self, xyz1, xyz2, points1, points2):
+        """
+        Input:
+            xyz1: input points position data, [B, C, N]
+            xyz2: sampled input points position data, [B, C, S]
+            points1: input points data, [B, D, N]
+            points2: input points data, [B, D, S]
+        Return:
+            new_points: upsampled points data, [B, D', N]
+        """
+        xyz1 = xyz1.permute(0, 2, 1)
+        xyz2 = xyz2.permute(0, 2, 1)
+
+        points2 = points2.permute(0, 2, 1)
+        B, N, C = xyz1.shape
+        _, S, _ = xyz2.shape
+
+        if S == 1:
+            interpolated_points = points2.repeat(1, N, 1)
+        else:
+            dists = square_distance(xyz1, xyz2)
+            dists, idx = dists.sort(dim=-1)
+            dists, idx = dists[:, :, :3], idx[:, :, :3]  # [B, N, 3]
+            dists[dists < 1e-10] = 1e-10
+            weight = 1.0 / dists  # [B, N, 3]
+            weight = weight / torch.sum(weight, dim=-1).view(B, N, 1)  # [B, N, 3]
+            interpolated_points = torch.sum(index_points(points2, idx) * weight.view(B, N, 3, 1), dim=2)
+
+        if points1 is not None:
+            points1 = points1.permute(0, 2, 1)
+            new_points = torch.cat([points1, interpolated_points], dim=-1)
+        else:
+            new_points = interpolated_points
+
+        new_points = new_points.permute(0, 2, 1)
+        for i, conv in enumerate(self.mlp_convs):
+            bn = self.mlp_bns[i]
+            new_points = F.relu(bn(conv(new_points)))
+        return new_points
 
 
 if __name__ == '__main__':
