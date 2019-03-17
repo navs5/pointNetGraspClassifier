@@ -114,8 +114,8 @@ class PointNetClsDeeper(nn.Module):
         self.bn3 = nn.BatchNorm1d(128)
         self.bn4 = nn.BatchNorm1d(64)
         self.bn5 = nn.BatchNorm1d(32)
-        self.dp1 = nn.Dropout(p=0.7)
-        self.dp2 = nn.Dropout(p=0.5)
+        self.dp1 = nn.Dropout(p=0.3)
+        self.dp2 = nn.Dropout(p=0.3)
         self.dp3 = nn.Dropout(p=0.3)
         self.relu = nn.ReLU()
 
