@@ -98,9 +98,9 @@ class PointNetCls(nn.Module):
         return F.log_softmax(x, dim=-1), trans
 
 
-class PointNetCls2(nn.Module):
+class PointNetClsDeeper(nn.Module):
     def __init__(self, num_points=2500, input_chann=3, k=2):
-        super(PointNetCls2, self).__init__()
+        super(PointNetClsDeeper, self).__init__()
         self.num_points = num_points
         self.feat = PointNetfeat(num_points, input_chann=input_chann, global_feat=True)
         self.fc1 = nn.Linear(1024, 512)
