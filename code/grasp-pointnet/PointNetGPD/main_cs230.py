@@ -70,7 +70,7 @@ def test(model, loader):
         data, target = data.float(), target.long().squeeze()
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        output, _ = model(data)  # N*C
+        output = model(data)  # N*C
         test_loss += F.nll_loss(output, target, size_average=False).cpu().item()
         pred = output.data.max(1, keepdim=True)[1]
         correct += pred.eq(target.view_as(pred)).long().cpu().sum()
@@ -117,7 +117,7 @@ if __name__ == "__main__":
                         help='pre-trained model path')
     parser.add_argument('--data-path', type=str, default='./data', help='data path')
     parser.add_argument('--log-interval', type=int, default=10)
-    parser.add_argument('--save-interval', type=int, default=50)
+    parser.add_argument('--save-interval', type=int, default=10)
 
     args = parser.parse_args()
     args.cuda = args.cuda if torch.cuda.is_available() else False
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     else:
         # model = PointNetClsDeeper(num_points=grasp_points_num, input_chann=point_channel, k=2)
         # model = Pointnet2MSG(num_classes=2)
-        model = PointNet2ClsSsg(num_classes=2)
+        model = PointNet2ClsMsg(num_classes=2)
 
     if args.cuda:
         if args.gpu != -1:

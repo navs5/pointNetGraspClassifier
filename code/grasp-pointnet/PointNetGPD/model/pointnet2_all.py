@@ -186,7 +186,7 @@ class PointNetSetAbstraction(nn.Module):
         new_xyz = new_xyz.permute(0, 2, 1)
         return new_xyz, new_points
 
-
+# PointNetSetAbstractionMsg(512, [0.1, 0.2, 0.4], [16, 32, 128], 0, [[32, 32, 64], [64, 64, 128], [64, 96, 128]])
 class PointNetSetAbstractionMsg(nn.Module):
     def __init__(self, npoint, radius_list, nsample_list, in_channel, mlp_list):
         super(PointNetSetAbstractionMsg, self).__init__()
