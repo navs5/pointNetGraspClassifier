@@ -8,7 +8,7 @@ import torch.nn as nn
 #sys.path.append(BASE_DIR)
 #sys.path.append(os.path.join(BASE_DIR, '../utils'))
 
-from nn_utils import *
+from model.nn_utils import *
 
 def get_edge_features(x, k):
     """
