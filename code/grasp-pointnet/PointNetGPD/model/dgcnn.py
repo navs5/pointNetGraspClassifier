@@ -57,7 +57,7 @@ class edgeConv(nn.Module):
         self.k = k
         self.Fin = Fin
         self.Fout = Fout
-        self.conv = nn_utils.conv2dbr(2*Fin, Fout, 1)
+        self.conv = conv2dbr(2*Fin, Fout, 1)
 
     def forward(self, x):
         B, Fin, N = x.shape
