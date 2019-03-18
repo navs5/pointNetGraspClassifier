@@ -14,7 +14,7 @@ from model.dataset import *
 # from model.pointnet2_msg_cls import Pointnet2MSG
 from model.pointnet2_all import PointNet2ClsSsg, PointNet2ClsMsg
 from model.dgcnn import *
-
+from model.metrics import *
 grasp_points_num = 1000
 thresh_good = 0.6
 thresh_bad = 0.6
@@ -176,7 +176,21 @@ if __name__ == "__main__":
         # model = PointNetClsDeeper(num_points=grasp_points_num, input_chann=point_channel, k=2)
         # model = Pointnet2MSG(num_classes=2)
         #model = PointNet2ClsMsg(num_classes=2)
-        model = dgcnn()
+        conf = metrics.config()
+        conf.epochs = 64 
+        conf.batch_size = 32
+        conf.learning_rate = 0.001
+        conf.lr_shrink_rate = 0.8
+        conf.lr_min = 0.00001
+        conf.regularization = 5e-4
+        conf.N = 1024 # max is 2048
+        conf.nCls = 2 #CHANGED FROM 40
+        conf.k = 20
+        conf.cuda = False #CHANGED FROM TRUE
+        conf.workers = 1
+        conf.print_freq = 50
+
+        model = dgcnn(conf)
     if args.cuda:
         if args.gpu != -1:
             print("Running cuda on device {}".format(args.gpu))
