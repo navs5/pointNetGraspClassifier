@@ -8,7 +8,7 @@ import torch.nn as nn
 #sys.path.append(BASE_DIR)
 #sys.path.append(os.path.join(BASE_DIR, '../utils'))
 
-import nn_utils
+from nn_utils import *
 
 def get_edge_features(x, k):
     """
@@ -75,11 +75,11 @@ class transformer(nn.Module):
     """
     def __init__(self, dim=3):
         super(transformer, self).__init__()
-        self.conv0 = nn_utils.conv1dbr(dim, 64, 1)
-        self.conv1 = nn_utils.conv1dbr(64, 1024, 1)
-        self.fc0 = nn_utils.fcdbr(1024, 512)
-        self.fc1 = nn_utils.fcdbr(512, 256)
-        self.fc2 = nn_utils.fcdbr(256, dim*dim)
+        self.conv0 = conv1dbr(dim, 64, 1)
+        self.conv1 = conv1dbr(64, 1024, 1)
+        self.fc0 = fcdbr(1024, 512)
+        self.fc1 = fcdbr(512, 256)
+        self.fc2 = fcdbr(256, dim*dim)
         
 
     def forward(self, x):
@@ -107,10 +107,10 @@ class dgcnn(nn.Module):
         self.ec1 = edgeConv(64, 64, conf.k)
         self.ec2 = edgeConv(64, 64, conf.k)
         self.ec3 = edgeConv(64, 128, conf.k)
-        self.conv0 = nn_utils.conv1dbr(128+64*3, 1024, 1)
-        self.conv1 = nn_utils.conv1dbr(1024, 512, 1)
-        self.conv2 = nn_utils.conv1dbr(512, 256, 1)
-        self.conv3 = nn_utils.conv1dbr(256, conf.nCls, 1)
+        self.conv0 = conv1dbr(128+64*3, 1024, 1)
+        self.conv1 = conv1dbr(1024, 512, 1)
+        self.conv2 = conv1dbr(512, 256, 1)
+        self.conv3 = conv1dbr(256, conf.nCls, 1)
 
 
     def forward(self, x):
