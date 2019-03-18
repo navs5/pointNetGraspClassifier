@@ -176,7 +176,7 @@ if __name__ == "__main__":
         # model = PointNetClsDeeper(num_points=grasp_points_num, input_chann=point_channel, k=2)
         # model = Pointnet2MSG(num_classes=2)
         #model = PointNet2ClsMsg(num_classes=2)
-        conf = metrics.config()
+        conf = config()
         conf.epochs = 64 
         conf.batch_size = 32
         conf.learning_rate = 0.001
