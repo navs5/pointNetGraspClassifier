@@ -2,6 +2,7 @@ import os, sys
 import time
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 #I TOOK THIS OUT:
 #BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -110,12 +111,14 @@ class dgcnn(nn.Module):
         self.conv0 = conv1dbr(128+64*3, 1024, 1)
         self.conv1 = conv1dbr(1024, 512, 1)
         self.conv2 = conv1dbr(512, 256, 1)
-        self.conv3 = conv1dbr(256, conf.nCls, 1)
+        self.conv3 = conv1dbr(256,256,1)
+        self.conv4 = conv1dbr(256,conf.nCls,1)
+        #self.conv3 = conv1dbr(256, conf.nCls, 1)
 
 
     def forward(self, x):
         B, Fin, N = x.shape
-
+        #x=transformer(x) #ZACH ADDED THIS
         x = self.ec0(x) # [B, 64, N]
         x1 = x
         x = self.ec1(x) 
@@ -131,8 +134,14 @@ class dgcnn(nn.Module):
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x) # [B, nCls, N]
-
+        #x=self.
+        x = self.conv4(x)
         x = torch.mean(x, 2) # [B, nCls]
-
+        #print('presoftmax is {}'.format(x))
+        #xsum = torch.sum
+        #i.nn.functional.softmax(x).data
+        x = F.log_softmax(x,dim=1)
+        #x = torch.nn.functional.softmax(Variable(x),dim=1).data# ZACH ADDED THIS
+        #.grad_fn = <MeanBackward0>
+        #print('post softmax x is {}'.format(x))
         return x
-

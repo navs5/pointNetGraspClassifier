@@ -15,6 +15,7 @@ from model.dataset import *
 from model.pointnet2_all import PointNet2ClsSsg, PointNet2ClsMsg
 from model.dgcnn import *
 from model.metrics import *
+import numpy
 grasp_points_num = 1000
 thresh_good = 0.6
 thresh_bad = 0.6
@@ -44,10 +45,18 @@ def train(model, loader, epoch, optimizer, scheduler):
             data, target = data.cuda(), target.cuda()
         optimizer.zero_grad()
         output = model(data)
+        #print('output shape is {} and is {}'.format(output.shape,output))
+        #print('target shape is {} and is {}'.format(target.shape,target))
+        #output_np = output.detach().numpy()
+        #print('output np array is {}'.format(output_np))
         loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
         pred = output.data.max(1, keepdim=True)[1]
+        #print("pred is {}".format(pred))
+        #loss = F.nll_loss(pred,target)
+        #loss.backward()
+        #optimizer.step()
         correct += pred.eq(target.view_as(pred)).long().cpu().sum()
         if (batch_idx+1) % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\t{}'.format(
@@ -108,17 +117,17 @@ if __name__ == "__main__":
     parser.add_argument('--tag', type=str, default='default')
     parser.add_argument('--epoch', type=int, default=25)
     parser.add_argument('--mode', choices=['train', 'test'], required=True)
-    parser.add_argument('--batch-size', type=int, default=16)
+    parser.add_argument('--batch-size', type=int, default=32)
     parser.add_argument('--cuda', action='store_true')
     parser.add_argument('--gpu', type=int, default=0)
-    parser.add_argument('--lr', type=float, default=0.005)
+    parser.add_argument('--lr', type=float, default=0.001)#CHANGED FROM 0.01
     parser.add_argument('--load-model', type=str, default='')
     parser.add_argument('--load-epoch', type=int, default=-1)
     parser.add_argument('--model-path', type=str, default='./assets/learned_models',
                         help='pre-trained model path')
     parser.add_argument('--data-path', type=str, default='./data', help='data path')
-    parser.add_argument('--log-interval', type=int, default=10)
-    parser.add_argument('--save-interval', type=int, default=10)
+    parser.add_argument('--log-interval', type=int, default=1)
+    parser.add_argument('--save-interval', type=int, default=1)
 
     args = parser.parse_args()
     args.cuda = args.cuda if torch.cuda.is_available() else False
@@ -178,7 +187,7 @@ if __name__ == "__main__":
         #model = PointNet2ClsMsg(num_classes=2)
         conf = config()
         conf.epochs = 64 
-        conf.batch_size = 32
+        conf.batch_size = 16
         conf.learning_rate = 0.001
         conf.lr_shrink_rate = 0.8
         conf.lr_min = 0.00001
@@ -188,7 +197,7 @@ if __name__ == "__main__":
         conf.k = 20
         conf.cuda = False #CHANGED FROM TRUE
         conf.workers = 1
-        conf.print_freq = 50
+        conf.print_freq = 1 #CHANGED FROM 50
 
         model = dgcnn(conf)
     if args.cuda:
