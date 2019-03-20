@@ -1,3 +1,5 @@
+#modified from the PyTorch implementation of DGCNN from (https://github.com/ashawkey/dgcnn.pointCloud.pytorch) 
+
 import os, sys
 import time
 import torch

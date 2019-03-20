@@ -1,3 +1,5 @@
+#from the PyTorch implementation of DGCNN from https://github.com/ashawkey/dgcnn.pointCloud.pytorch
+
 import torch
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score

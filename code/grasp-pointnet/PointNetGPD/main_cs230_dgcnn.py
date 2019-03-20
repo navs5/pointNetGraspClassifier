@@ -1,3 +1,5 @@
+#modified from the PyTorch implementation of PointNetGPD (https://github.com/lianghongzhuo/PointNetGPD)
+
 import argparse
 import time
 
