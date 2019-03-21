@@ -1,3 +1,5 @@
+# reference: https://github.com/fxia22/kdnet.pytorch.git
+
 import argparse
 import time
 
@@ -12,7 +14,14 @@ from torch.optim.lr_scheduler import StepLR
 from model.dataset import *
 # from model.pointnet import PointNetCls, PointNetClsDeeper
 # from model.pointnet2_msg_cls import Pointnet2MSG
-from model.pointnet2_all import PointNet2ClsSsg, PointNet2ClsMsg
+# from model.pointnet2_all import PointNet2ClsSsg, PointNet2ClsMsg
+from model.train import KDNet
+from model.kdtree import make_cKDTree
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+
 
 grasp_points_num = 1000
 thresh_good = 0.6
@@ -35,6 +44,7 @@ def train(model, loader, epoch, optimizer, scheduler):
     torch.set_grad_enabled(True)
     correct = 0
     dataset_size = 0
+    ij = 0
     for batch_idx, (data, target) in enumerate(loader):
         dataset_size += data.shape[0]
         # print(data.shape)
@@ -42,17 +52,34 @@ def train(model, loader, epoch, optimizer, scheduler):
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         optimizer.zero_grad()
-        output = model(data)
-        loss = F.nll_loss(output, target)
-        loss.backward()
+        num_points = 2048
+        #pre-processing for kdtree model :
+        for i in range(data.shape[0]):
+            point_set = data[i,:,:].transpose(1,0)
+            t = target[i:i+1]
+            point_set = point_set[:num_points]
+            if point_set.size(0) <num_points :
+                point_set = torch.cat([point_set, point_set[0:num_points - point_set.size(0)]], 0 )
+            cutdim, tree =make_cKDTree(point_set.cpu().numpy(), depth = 11)
+            cutdim_v = [(torch.from_numpy(np.array(item).astype(np.int64))) for item in cutdim]
+            points = torch.FloatTensor(tree[-1])
+            points_v = Variable(torch.unsqueeze(torch.squeeze(points), 0 )).transpose(2,1).cuda()
+            output = model(points_v, cutdim_v)
+            pred = output.data.max(1)[1] 
+            loss = F.nll_loss(output, t)
+            loss.backward()
+            correct+=pred.eq(t.view_as(pred)).long().cpu().sum()
         optimizer.step()
-        pred = output.data.max(1, keepdim=True)[1]
-        correct += pred.eq(target.view_as(pred)).long().cpu().sum()
         if (batch_idx+1) % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\t{}'.format(
                 epoch, batch_idx * args.batch_size, len(loader.dataset),
                 100. * batch_idx * args.batch_size / len(loader.dataset), loss.item(), args.tag))
             logger.add_scalar('train_loss', loss.cpu().item(), batch_idx + epoch * len(loader))
+            
+        ij +=1
+        if ij>60 :
+            return float(correct)/float(dataset_size)
+    
     return float(correct)/float(dataset_size)
 
 
@@ -65,17 +92,37 @@ def test(model, loader):
     da = {}
     db = {}
     res = []
+    ij = 0
     for data, target, obj_name in loader:
         dataset_size += data.shape[0]
         data, target = data.float(), target.long().squeeze()
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        output = model(data)  # N*C
-        test_loss += F.nll_loss(output, target, size_average=False).cpu().item()
-        pred = output.data.max(1, keepdim=True)[1]
-        correct += pred.eq(target.view_as(pred)).long().cpu().sum()
+        
+        num_points = 2048
+        #pre-processing for kdtree model :
+        for i in range(data.shape[0]):
+            point_set = data[i,:,:].transpose(1,0)
+            t = target[i:i+1]
+            point_set = point_set[:num_points]
+            if point_set.size(0) <num_points :
+                point_set = torch.cat([point_set, point_set[0:num_points - point_set.size(0)]], 0 )
+            cutdim, tree =make_cKDTree(point_set.cpu().numpy(), depth = 11)
+            cutdim_v = [(torch.from_numpy(np.array(item).astype(np.int64))) for item in cutdim]
+            points = torch.FloatTensor(tree[-1])
+            points_v = Variable(torch.unsqueeze(torch.squeeze(points), 0 )).transpose(2,1).cuda()
+            output = model(points_v, cutdim_v)
+            pred = output.data.max(1)[1]    
+            test_loss += F.nll_loss(output, t)            
+            correct+=pred.eq(t.view_as(pred)).long().cpu().sum()
         for i, j, k in zip(obj_name, pred.data.cpu().numpy(), target.data.cpu().numpy()):
-            res.append((i, j[0], k))
+            res.append((i, j, k))
+        
+        ij +=1
+        if ij>60 :
+            test_loss /= len(loader.dataset)
+            acc = float(correct)/float(dataset_size)
+            return acc, test_loss
 
     test_loss /= len(loader.dataset)
     acc = float(correct)/float(dataset_size)
@@ -174,8 +221,8 @@ if __name__ == "__main__":
     else:
         # model = PointNetClsDeeper(num_points=grasp_points_num, input_chann=point_channel, k=2)
         # model = Pointnet2MSG(num_classes=2)
-        model = PointNet2ClsSsg(num_classes=2)
-
+        # model = PointNet2ClsSsg(num_classes=2)
+        model = KDNet(k=2).cuda()
     if args.cuda:
         if args.gpu != -1:
             print("Running cuda on device {}".format(args.gpu))
